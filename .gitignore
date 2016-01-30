@@ -51,3 +51,6 @@ ChangeLog
 *~
 .*.swp
 .*sw?
+
+# particle binary out files
+*_firmware_*.bin
