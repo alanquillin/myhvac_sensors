@@ -1,10 +1,10 @@
-#include "led_color_state.h"
-#include "multicolor_led.h"
+#include "rgb_led.h"
+#include "rgb_led_color.h"
 #include "MCP9808.h"
 
 TCPClient client;
 MCP9808 mcp = MCP9808();
-MultiColorLED led = MultiColorLED();
+RgbLed led = RgbLed();
 
 double currentTempC = 0;
 double currentTempF = 0;
@@ -23,7 +23,7 @@ void setup()
     led.init();
     led.setColor(YELLOW);
 
-    Serial.print("Initializing... ");
+    Serial.println("Initializing... ");
 
     while(! mcp.begin()){
         led.setColor(RED);
@@ -37,8 +37,9 @@ void setup()
     Particle.variable("currentTempF", &currentTempF, DOUBLE);
 
     delay(2000);
-    Serial.println("complete.");
-    led.setColor(GREEN);
+    led.setColor(RED);
+    delay(1000);
+    Serial.println("Initialization complete.");
 }
 
 void send_data()
@@ -53,7 +54,7 @@ double c2f(double c){
 void loop()
 {
     led.setColor(BLUE);
-
+    delay(500);
     double celcius = mcp.getTemperature();
     double fahrenheit = c2f(celcius);
     printTemp(celcius, fahrenheit);
