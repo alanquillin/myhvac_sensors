@@ -1,7 +1,11 @@
 #include "rgb_led.h"
 
+/****************************************************
+********** Constructors and Initialization **********
+*****************************************************/
+
 RgbLed::RgbLed(){
-  _setup(COMMON_ANODE, B_EXTREMELY_LOW, ANALOG);
+  _setup(COMMON_ANODE, B_MEDIUM, ANALOG);
 }
 
 RgbLed::RgbLed(LedType led_type, LedBrightness brightness, LedWriteStyle led_write_style){
@@ -16,6 +20,11 @@ void RgbLed::_setup(LedType led_type, LedBrightness brightness, LedWriteStyle le
   _led_type = led_type;
   _led_write_style = led_write_style;
 }
+
+
+/************************************************
+********** Public Functions *********************
+*************************************************/
 
 void RgbLed::init(){
   switch(_led_type){
@@ -51,23 +60,74 @@ void RgbLed::init(){
 
   setColor(OFF);
 
-  Particle.function("enable_led", &RgbLed::cldEnable, this);
-  Particle.function("set_bright", &RgbLed::cldSetBrightness, this);
+  Particle.function("led_command", &RgbLed::cldExecuteLedCommand, this);
 }
 
 void RgbLed::setColor(RgbLedColor color){
   _currentColor = color;
 
   if(_enabled){
-    Serial.print("Setting Blue pin value: ");
+    //Serial.print("Setting Blue pin value: ");
     _setColor(LED_BLUE_PIN, color.getBlue());
-      Serial.print("Setting Green pin value: ");
+    //Serial.print("Setting Green pin value: ");
     _setColor(LED_GREEN_PIN, color.getGreen());
-      Serial.print("Setting Red pin value: ");
+    //Serial.print("Setting Red pin value: ");
     _setColor(LED_RED_PIN, color.getRed());
   }
 }
 
+void RgbLed::enable(){
+  Serial.println("Enabling the LED");
+  _enabled = true;
+  setColor(_currentColor);
+}
+
+void RgbLed::disable(){
+  Serial.println("Disabling the LED");
+  setColor(OFF);
+  _enabled = false;
+}
+
+/************************************************
+********** Cloud Enabled Functions **************
+*************************************************/
+
+int RgbLed::cldExecuteLedCommand(String data){
+  Cmd * commands = new Cmd[21];
+  _parseCommands(data, commands, 0);
+
+  for(int i = 0; i < 21; i++){
+    Cmd cmd = commands[i];
+
+    if(cmd.key.length() > 0) {
+      Serial.print("Processing command: ");
+      Serial.print(cmd.key);
+      Serial.print("=");
+      Serial.println(cmd.value);
+      if(cmd.key.equalsIgnoreCase("enabled")) {
+        if(cmd.value.equalsIgnoreCase(String("true"))) {
+          enable();
+        }
+
+        if(cmd.value.equalsIgnoreCase(String("false"))) {
+          disable();
+        }
+      }
+      else if(cmd.key.equalsIgnoreCase("brightness")){
+        _setBrightness(cmd.value);
+      }
+      else {
+        Serial.print("Unknown LED command recieved: ");
+        Serial.print(cmd.key);
+        Serial.println("... ignoring.");
+      }
+    }
+  }
+}
+
+/************************************************
+********** Private Functions ********************
+*************************************************/
 
 void RgbLed::_setColor(int pin, int val){
   _writePinValue(pin, val);
@@ -101,7 +161,7 @@ void RgbLed::_writePinValue(int pin, int val){
           break;
       }
     }
-    Serial.println(value);
+    //Serial.println(value);
     analogWrite(pin, value);
   }
   else{
@@ -109,21 +169,36 @@ void RgbLed::_writePinValue(int pin, int val){
   }
 }
 
-int RgbLed::cldEnable(String data){
-    if(data.equalsIgnoreCase(String("true"))){
-      enable();
-      return 1;
-    }
+void RgbLed::_parseCommands(String data, Cmd* commands, int i){
+  Serial.print("Parsing LED commands.  Data: ");
+  Serial.println(data);
+  int index = data.indexOf(",", 0);
+  Serial.print("Index for first '=' ");
+  Serial.println(index);
+  if(index == -1){
+    _parseCommand(data, commands, i);
+    return;
+  }
 
-    if(data.equalsIgnoreCase(String("false"))){
-      disable();
-      return 1;
-    }
-
-    return 0;
+  _parseCommand(data.substring(0, index), commands, i);
+  _parseCommands(data.substring(index + 1), commands, i+1);
 }
 
-int RgbLed::cldSetBrightness(String data){
+void RgbLed::_parseCommand(String command, Cmd* commands, int i){
+  Serial.print("Parsing LED command.  Command: ");
+  Serial.println(command);
+  int index = command.indexOf("=", 0);
+  if(index == -1){
+    return;
+  }
+
+  struct Cmd cmd;
+  cmd.key = command.substring(0, index);
+  cmd.value = command.substring(index + 1);
+  commands[i] = cmd;
+}
+
+void RgbLed::_setBrightness(String data){
   if(data.equalsIgnoreCase(String("high")) || data.equalsIgnoreCase(String("h"))){
     _brightness = B_HIGH;
   }
@@ -146,20 +221,9 @@ int RgbLed::cldSetBrightness(String data){
     _brightness = B_EXTREMELY_LOW;
   }
   else{
-    return -1;
+    Serial.print("Unknown brightness command value: ");
+    Serial.println(data);
   }
 
   setColor(_currentColor);
-}
-
-void RgbLed::enable(){
-  Serial.println("Enabling the LED");
-  _enabled = true;
-  setColor(_currentColor);
-}
-
-void RgbLed::disable(){
-  Serial.println("Disabling the LED");
-  setColor(OFF);
-  _enabled = false;
 }

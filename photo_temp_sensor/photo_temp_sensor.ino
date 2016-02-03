@@ -54,7 +54,6 @@ double c2f(double c){
 void loop()
 {
     led.setColor(BLUE);
-    delay(500);
     double celcius = mcp.getTemperature();
     double fahrenheit = c2f(celcius);
     printTemp(celcius, fahrenheit);
@@ -65,5 +64,5 @@ void loop()
 
     led.setColor(GREEN);
 
-    delay(2000);
+    delay(5000);
 }

@@ -11,6 +11,12 @@
 class RgbLed
 {
 public:
+  struct Cmd
+  {
+    String key;
+    String value;
+  };
+
   enum LedType
   {
     COMMON_ANODE,
@@ -41,13 +47,15 @@ public:
   void setColor(RgbLedColor color);
   void enable();
   void disable();
-  int cldEnable(String data);
-  int cldSetBrightness(String data);
+  int cldExecuteLedCommand(String data);
 
 private:
   void _setup(LedType type, LedBrightness brightness, LedWriteStyle led_write_style);
   void _setColor(int pin, int val);
+  void _setBrightness(String value);
   void _writePinValue(int pin, int val);
+  void _parseCommands(String data, Cmd* commands, int i);
+  void _parseCommand(String command, Cmd* commands, int i);
 
   RgbLedColor _currentColor;
   bool _enabled;
