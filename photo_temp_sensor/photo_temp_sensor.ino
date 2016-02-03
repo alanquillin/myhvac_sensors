@@ -5,6 +5,7 @@
 TCPClient client;
 MCP9808 mcp = MCP9808();
 RgbLed led = RgbLed();
+String myDeviceId;
 
 double currentTempC = 0;
 double currentTempF = 0;
@@ -20,8 +21,15 @@ void setup()
 {
     Serial.begin(9600);
 
+    myDeviceId = Particle.deviceID();
+
+    Serial.print("My device id: ");
+
+    Serial.println(myDeviceId);
+
     led.init();
     led.setColor(YELLOW);
+
 
     Serial.println("Initializing... ");
 
