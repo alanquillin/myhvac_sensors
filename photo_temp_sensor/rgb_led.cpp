@@ -5,7 +5,7 @@
 *****************************************************/
 
 RgbLed::RgbLed(){
-  _setup(COMMON_ANODE, B_MEDIUM, ANALOG);
+  _setup(COMMON_CATHODE, B_MEDIUM, ANALOG);
 }
 
 RgbLed::RgbLed(LedType led_type, LedBrightness brightness, LedWriteStyle led_write_style){
@@ -64,14 +64,16 @@ void RgbLed::init(){
 }
 
 void RgbLed::setColor(RgbLedColor color){
-  _currentColor = color;
+  if(!color.equals(OFF) && !color.equals(NONE)){
+    _currentColor = color;
+  }
 
   if(_enabled){
-    //Serial.print("Setting Blue pin value: ");
+    Serial.print("Setting Blue pin value: ");
     _setColor(LED_BLUE_PIN, color.getBlue());
-    //Serial.print("Setting Green pin value: ");
+    Serial.print("Setting Green pin value: ");
     _setColor(LED_GREEN_PIN, color.getGreen());
-    //Serial.print("Setting Red pin value: ");
+    Serial.print("Setting Red pin value: ");
     _setColor(LED_RED_PIN, color.getRed());
   }
 }
@@ -115,6 +117,59 @@ int RgbLed::cldExecuteLedCommand(String data){
       }
       else if(cmd.key.equalsIgnoreCase("brightness")){
         _setBrightness(cmd.value);
+      }
+      else if(cmd.key.equalsIgnoreCase("color")){
+        RgbLedColor color = RgbLedColor::getColorByName(cmd.value);
+        if(color.equals(NONE)){
+          Serial.print("Unknown color: ");
+          Serial.print(color.getName());
+          Serial.println(".  Unable to set color.");
+        }
+        else {
+          setColor(color);
+        }
+      }
+      else if(cmd.key.equalsIgnoreCase("write_style")){
+        if(cmd.value.equalsIgnoreCase("d") || cmd.value.equalsIgnoreCase("digital")){
+          _led_write_style = DIGITAL;
+          setColor(_currentColor);
+        }
+        else if(cmd.value.equalsIgnoreCase("a") || cmd.value.equalsIgnoreCase("analog")){
+          _led_write_style = ANALOG;
+          setColor(_currentColor);
+        }
+        else {
+          Serial.print("Unknown LED write style: ");
+          Serial.print(cmd.value);
+          Serial.println(". No changes will be made.");
+        }
+      }
+      else if(cmd.key.equalsIgnoreCase("type")){
+        if(cmd.value.equalsIgnoreCase("ca") || cmd.value.equalsIgnoreCase("a") || cmd.value.equalsIgnoreCase("anode") || cmd.value.equalsIgnoreCase("common anode") || cmd.value.equalsIgnoreCase("common_anode")){
+          _led_type = COMMON_ANODE;
+          setColor(_currentColor);
+        }
+        else if(cmd.value.equalsIgnoreCase("cc") || cmd.value.equalsIgnoreCase("c") || cmd.value.equalsIgnoreCase("cathode") || cmd.value.equalsIgnoreCase("common cathode") || cmd.value.equalsIgnoreCase("common_cathode")){
+          _led_type = COMMON_CATHODE;
+          setColor(_currentColor);
+        }
+        else{
+          Serial.print("Unknown LED write style: ");
+          Serial.print(cmd.value);
+          Serial.println(". No changes will be made.");
+        }
+      }
+      else if(cmd.key.equalsIgnoreCase("rgb")){
+        RgbLedColor color = RgbLedColor::buildFromString(cmd.value);
+
+        if(color.equals(NONE)){
+          Serial.print("Invalid RGB value: ");
+          Serial.print(cmd.value);
+          Serial.println(". No changes will be made.");
+        }
+        else{
+          setColor(color);
+        }
       }
       else {
         Serial.print("Unknown LED command recieved: ");
@@ -161,10 +216,18 @@ void RgbLed::_writePinValue(int pin, int val){
           break;
       }
     }
-    //Serial.println(value);
+    Serial.print(value);
+    Serial.print(" on pin: ");
+    Serial.print(pin);
+    Serial.println(" via ANALOG write.");
+
     analogWrite(pin, value);
   }
   else{
+    Serial.print(val > 0 ? _d_high : _d_low);
+    Serial.print(" on pin: ");
+    Serial.print(pin);
+    Serial.println(" via DIGITAL write.");
     digitalWrite(pin, val > 0 ? _d_high : _d_low);
   }
 }
@@ -193,8 +256,8 @@ void RgbLed::_parseCommand(String command, Cmd* commands, int i){
   }
 
   struct Cmd cmd;
-  cmd.key = command.substring(0, index);
-  cmd.value = command.substring(index + 1);
+  cmd.key = command.substring(0, index).trim();
+  cmd.value = command.substring(index + 1).trim();
   commands[i] = cmd;
 }
 

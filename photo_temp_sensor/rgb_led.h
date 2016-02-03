@@ -4,9 +4,9 @@
 #include "application.h"
 #include "rgb_led_color.h"
 
-#define LED_BLUE_PIN    D2
-#define LED_GREEN_PIN   D3
-#define LED_RED_PIN     A3
+#define LED_BLUE_PIN    A4
+#define LED_GREEN_PIN   A5
+#define LED_RED_PIN     A7
 
 class RgbLed
 {

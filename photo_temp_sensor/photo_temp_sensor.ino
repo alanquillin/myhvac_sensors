@@ -47,6 +47,9 @@ void setup()
     delay(2000);
     led.setColor(RED);
     delay(1000);
+    led.setColor(BLUE);
+    delay(1000);
+    led.setColor(GREEN);
     Serial.println("Initialization complete.");
 }
 
@@ -61,16 +64,22 @@ double c2f(double c){
 
 void loop()
 {
-    led.setColor(BLUE);
-    double celcius = mcp.getTemperature();
-    double fahrenheit = c2f(celcius);
-    printTemp(celcius, fahrenheit);
+  double celcius = 0.0;
+  int cnt;
+  while (celcius <= 0){
+    celcius = mcp.getTemperature();
+    cnt = cnt + 1;
+    if (cnt >= 10){
+      break;
+    }
+  }
 
-    currentTempC = celcius;
-    currentTempF = fahrenheit;
-    Serial.flush();
+  double fahrenheit = c2f(celcius);
+  printTemp(celcius, fahrenheit);
 
-    led.setColor(GREEN);
+  currentTempC = celcius;
+  currentTempF = fahrenheit;
+  Serial.flush();
 
-    delay(5000);
+  delay(5000);
 }
