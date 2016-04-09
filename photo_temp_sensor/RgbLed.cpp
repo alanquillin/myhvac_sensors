@@ -1,11 +1,11 @@
-#include "rgb_led.h"
+#include "RgbLed.h"
 
 /****************************************************
 ********** Constructors and Initialization **********
 *****************************************************/
 
 RgbLed::RgbLed(){
-  _setup(COMMON_CATHODE, B_MEDIUM, ANALOG);
+  _setup(COMMON_CATHODE, B_VERY_LOW, ANALOG);
 }
 
 RgbLed::RgbLed(LedType led_type, LedBrightness brightness, LedWriteStyle led_write_style){
@@ -69,11 +69,8 @@ void RgbLed::setColor(RgbLedColor color){
   }
 
   if(_enabled){
-    Serial.print("Setting Blue pin value: ");
     _setColor(LED_BLUE_PIN, color.getBlue());
-    Serial.print("Setting Green pin value: ");
     _setColor(LED_GREEN_PIN, color.getGreen());
-    Serial.print("Setting Red pin value: ");
     _setColor(LED_RED_PIN, color.getRed());
   }
 }
@@ -216,18 +213,18 @@ void RgbLed::_writePinValue(int pin, int val){
           break;
       }
     }
-    Serial.print(value);
-    Serial.print(" on pin: ");
-    Serial.print(pin);
-    Serial.println(" via ANALOG write.");
+    //Serial.print(value);
+    //Serial.print(" on pin: ");
+    //Serial.print(pin);
+    //Serial.println(" via ANALOG write.");
 
     analogWrite(pin, value);
   }
   else{
-    Serial.print(val > 0 ? _d_high : _d_low);
-    Serial.print(" on pin: ");
-    Serial.print(pin);
-    Serial.println(" via DIGITAL write.");
+    //Serial.print(val > 0 ? _d_high : _d_low);
+    //Serial.print(" on pin: ");
+    //Serial.print(pin);
+    //Serial.println(" via DIGITAL write.");
     digitalWrite(pin, val > 0 ? _d_high : _d_low);
   }
 }

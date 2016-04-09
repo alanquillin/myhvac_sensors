@@ -1,4 +1,4 @@
-#include "rgb_led_color.h"
+#include "RgbLedColor.h"
 
 RgbLedColor::RgbLedColor(){
   _setup(RgbColorOff, RgbColorOff, RgbColorOff, String("UNKNOWN"));

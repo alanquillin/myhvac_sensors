@@ -1,8 +1,8 @@
-#ifndef RGB_LED_H
-#define RGB_LED_H
+#ifndef __RGB_LED_H__
+#define __RGB_LED_H__
 
 #include "application.h"
-#include "rgb_led_color.h"
+#include "RgbLedColor.h"
 
 #define LED_BLUE_PIN    A4
 #define LED_GREEN_PIN   A5
