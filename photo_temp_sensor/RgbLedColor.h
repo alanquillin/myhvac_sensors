@@ -1,5 +1,5 @@
-#ifndef RGB_LED_COLOR_H
-#define RGB_LED_COLOR_H
+#ifndef __RGB_LED_COLOR_H__
+#define __RGB_LED_COLOR_H__
 
 #include "application.h"
 
@@ -30,7 +30,7 @@ private:
 #define RED     RgbLedColor(RgbColorMax, RgbColorOff, RgbColorOff, "Red")
 #define GREEN   RgbLedColor(RgbColorOff, RgbColorMax, RgbColorOff, "Green")
 #define BLUE    RgbLedColor(RgbColorOff, RgbColorOff, RgbColorMax, "Blue")
-#define YELLOW  RgbLedColor(RgbColorMax, RgbColorMax, RgbColorOff, "Yellow")
+#define YELLOW  RgbLedColor(RgbColorMax, RgbColorMax - 40, RgbColorOff, "Yellow")
 #define WHITE   RgbLedColor(RgbColorMax, RgbColorMax, RgbColorMax, "White")
 #define OFF     RgbLedColor(RgbColorOff, RgbColorOff, RgbColorOff, "Off")
 #define NONE     RgbLedColor(RgbColorOff, RgbColorOff, RgbColorOff, "Off")
