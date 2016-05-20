@@ -15,8 +15,11 @@ bool is_registered = false;
 bool is_server_available = false;
 bool is_mcp_initialized = false;
 int error_state_backoff_cnt = 1;
+bool last_call_success = true;
 
 double currentTempC = 0;
+double last_temp_sent = 0;
+
 int counter = 0;
 
 void printTemp(float celcius, float fahrenheit)
@@ -31,6 +34,7 @@ void check_cloud(){
     Particle.connect();
   }
   Particle.process();
+  Particle.disconnect();
 }
 
 void test_server(){
@@ -58,6 +62,40 @@ void init_mcp(){
   }
 }
 
+
+void send_temp_data(){
+  if(! is_server_available || ! is_registered){
+    return;
+  }
+
+  if(! last_call_success || round(last_temp_sent) != round(currentTempC)){
+    led.setColor(BLUE);
+
+    WiFi.on();
+    WiFi.connect();
+    waitUntil(WiFi.ready);
+
+    double fahrenheit = c2f(currentTempC);
+    if (! client.SendTemperatureData(currentTempC, fahrenheit)) {
+      Serial.println("Main> Failed to send data to server. Testing if the server is available.");
+      last_call_success = false;
+      test_server();
+    }
+    else{
+      last_temp_sent = currentTempC;
+      last_call_success = true;
+    }
+
+    // Since the wifi is already on, lets check the cloud for anything.
+    check_cloud();
+    WiFi.off();
+    led.setColor(GREEN);
+  }
+}
+
+Timer sd_timer(120000, send_temp_data);
+
+
 void setup()
 {
     Serial.begin(9600);
@@ -69,8 +107,10 @@ void setup()
     led.init();
     led.setColor(YELLOW);
 
-    check_cloud();
+    WiFi.on();
+    WiFi.connect();
     waitUntil(WiFi.ready);
+    check_cloud();
 
     Serial.print("Main> My device id: ");
     Serial.println(myDeviceId);
@@ -89,10 +129,13 @@ void setup()
     else{
       led.setColor(GREEN);
     }
+    Serial.println("Main> Shutting down WiFi to save power...");
+    WiFi.off();
 
+    sd_timer.start();
+    RGB.control(true);
+    RGB.brightness(2);
     Serial.println("Main> Initialization complete.");
-
-    Serial.flush();
 }
 
 double c2f(double c){
@@ -105,16 +148,26 @@ void loop()
     led.setColor(RED);
     Serial.println("Main> The system is currently in an error state.  Sleeping..");
     if((error_state_backoff_cnt % 2) == 0){
+      WiFi.on();
+      WiFi.connect();
+      waitUntil(WiFi.ready);
+
       check_cloud();
     }
 
-    delay(10000 * error_state_backoff_cnt);
-
     if(! is_server_available){
+      WiFi.on();
+      WiFi.connect();
+      waitUntil(WiFi.ready);
+
       test_server();
     }
 
     if(is_server_available == true){
+      WiFi.on();
+      WiFi.connect();
+      waitUntil(WiFi.ready);
+
       if(! is_registered){
         register_sensor();
       }
@@ -124,11 +177,18 @@ void loop()
       init_mcp();
     }
 
+    if(error_state_backoff_cnt < 10){
+      error_state_backoff_cnt = error_state_backoff_cnt + 1;
+    }
+    // Make sure the wifi is off incase it was turned on
+    // in one of the previous check above.
+    WiFi.off();
+    delay(10000 * error_state_backoff_cnt);
     return;
   }
 
   led.setColor(GREEN);
-  error_state_backoff_cnt = 1;
+  error_state_backoff_cnt = 0;
 
   double celcius = 0.0;
   int cnt;
@@ -141,39 +201,11 @@ void loop()
   }
 
   if(celcius > 0){
+    currentTempC = celcius;
     double fahrenheit = c2f(celcius);
     printTemp(celcius, fahrenheit);
-
-
-    // If the temp has not changed (+/- .5 degrees) no need to send the data
-    // However, if the counter reaches 10, then send the data anyway
-    // to notify the server that you are still alive :)
-    if (round(celcius) != round(currentTempC) || counter > 10) {
-      led.setColor(BLUE);
-      currentTempC = celcius;
-      Serial.println("Main> Sending temp data to server.");
-      if (! client.SendTemperatureData(celcius, fahrenheit)) {
-        Serial.println("Main> Failed to send data to server, will try again next time");
-      }
-      else {
-        counter = 0;
-      }
-
-      // If it has failed 5 times to send the data, then assume the service is
-      // down and put the system in an error state
-      if(counter > 15){
-        Serial.println("Main> Failed to send data to the server several times.  Putting system in error state.");
-        is_server_available = false;
-      }
-      // Since we are already making wifi calls,
-      // lets check the cloud for updates.
-      check_cloud();
-    }
-
-    counter = counter + 1;
   }
 
   led.setColor(GREEN);
-  Serial.flush();
   delay(5000);
 }
