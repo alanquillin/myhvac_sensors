@@ -17,11 +17,14 @@ int error_state_backoff_cnt = 1;
 double currentTempC = 0;
 int counter = 0;
 
+int LOOP_DELAY_MS = 2500; // 2.5 sec
+int FORCE_SEND_TEMP_INTERVAL_MS = 120000; // 2 min
+
+int TEMP_LOOP_CNT_THRESHOLD;
+
 void printTemp(float celcius, float fahrenheit)
 {
-  char str[100];
-  sprintf(str, "Temperature: %f C, %f F", celcius, fahrenheit);
-  Serial.println(str);
+  Serial.printlnf("Main> Temperature: %f C, %f F", celcius, fahrenheit);
 }
 
 void test_server(){
@@ -57,9 +60,22 @@ void setup()
 
     Serial.println("Main> Initializing... ");
 
+    // Calculate the number of times we chack to see if the temp has changed
+    // before we forcefully send the data to the server even if the temp
+    // has not changed.
+    TEMP_LOOP_CNT_THRESHOLD = (FORCE_SEND_TEMP_INTERVAL_MS / LOOP_DELAY_MS);
+
+    Serial.printlnf("Main> Loop delay %f (S), %d (MS).", (LOOP_DELAY_MS / 1000), LOOP_DELAY_MS);
+    Serial.printlnf("Main> Time delay before send %f (S), %d (MS)", (FORCE_SEND_TEMP_INTERVAL_MS / 1000), FORCE_SEND_TEMP_INTERVAL_MS);
+    Serial.printlnf("Main> Check temp counter threshold (MAX counter value): %d", TEMP_LOOP_CNT_THRESHOLD);
+
     led.init();
     led.disable();
     led.setColor(YELLOW);
+
+    RGB.control(true);
+    RGB.brightness(0);
+    RGB.control(false);
 
     Serial.print("Main> My device id: ");
     Serial.println(myDeviceId);
@@ -93,6 +109,12 @@ void setup()
 
 double c2f(double c){
   return c * 1.8 + 32.0;
+}
+
+double abs_d(double x){
+  if (x < 0) return x * -1;
+
+  return x;
 }
 
 void loop()
@@ -148,10 +170,12 @@ void loop()
     // If the temp has not changed (+/- .5 degrees) no need to send the data
     // However, if the counter reaches 10, then send the data anyway
     // to notify the server that you are still alive :)
-    if (round(celcius) != round(currentTempC) || counter > 10) {
+    double diff = currentTempC - celcius;
+    if (abs_d(diff) > .5 || counter > TEMP_LOOP_CNT_THRESHOLD) {
       led.setColor(BLUE);
+      Serial.print("Main> Sending current temp data to server.");
+      Serial.printlnf("Previous temp: %f C, Current temp: %f C", currentTempC, celcius);
       currentTempC = celcius;
-      Serial.println("Main> Sending temp data to server.");
       if (! client.SendTemperatureData(celcius, fahrenheit)) {
         Serial.println("Main> Failed to send data to server, will try again next time");
       }
@@ -161,16 +185,17 @@ void loop()
 
       // If it has failed 5 times to send the data, then assume the service is
       // down and put the system in an error state
-      if(counter > 15){
+      if(counter > TEMP_LOOP_CNT_THRESHOLD + 5){
         Serial.println("Main> Failed to send data to the server several times.  Putting system in error state.");
         is_server_available = false;
       }
     }
-
-    counter = counter + 1;
+    else{
+      counter = counter + 1;
+    }
   }
 
   led.setColor(GREEN);
   Serial.flush();
-  delay(2500);
+  delay(LOOP_DELAY_MS);
 }
