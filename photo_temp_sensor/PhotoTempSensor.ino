@@ -17,8 +17,8 @@ int error_state_backoff_cnt = 1;
 double currentTempC = 0;
 int counter = 0;
 
-int LOOP_DELAY_MS = 2500; // 2.5 sec
-int FORCE_SEND_TEMP_INTERVAL_MS = 120000; // 2 min
+int LOOP_DELAY_MS = 5000; // 2.5 sec
+int FORCE_SEND_TEMP_INTERVAL_MS = 300000; // 5 min
 
 int TEMP_LOOP_CNT_THRESHOLD;
 
@@ -173,8 +173,10 @@ void loop()
     double diff = currentTempC - celcius;
     if (abs_d(diff) > .5 || counter > TEMP_LOOP_CNT_THRESHOLD) {
       led.setColor(BLUE);
+
       Serial.print("Main> Sending current temp data to server.");
       Serial.printlnf("Previous temp: %f C, Current temp: %f C", currentTempC, celcius);
+
       currentTempC = celcius;
       if (! client.SendTemperatureData(celcius, fahrenheit)) {
         Serial.println("Main> Failed to send data to server, will try again next time");
