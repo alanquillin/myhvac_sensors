@@ -137,7 +137,10 @@ http_response_t MeasurementService::Get(String path){
 
   http_response_t response;
 
-  Serial.print("MeasurementService>\tPath: ");
+  Serial.print("MeasurementService>\tGET http://");
+  Serial.print(HOST);
+  Serial.print(":");
+  Serial.print(PORT);
   Serial.println(path);
 
   http_client.get(request, response, GET_HEADERS);
@@ -158,7 +161,10 @@ http_response_t MeasurementService::Post(String path, String data){
 
   http_response_t response;
 
-  Serial.print("MeasurementService>\tPath: ");
+  Serial.print("MeasurementService>\tPOST http://");
+  Serial.print(HOST);
+  Serial.print(":");
+  Serial.print(PORT);
   Serial.println(path);
   Serial.print("MeasurementService>\tData: ");
   Serial.println(data);
